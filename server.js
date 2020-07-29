@@ -1,9 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
+const config = require('config');
 
-const users = require('./routes/api/users');
-const posts = require('./routes/api/posts');
+const users = require('./routes/v0/users');
+const posts = require('./routes/v0/posts');
+const auth = require('./routes/v0/auth');
 
 const app = express();
 
@@ -11,16 +13,17 @@ const app = express();
 app.use(express.json());
 
 // MongoDB config
-const db = require('./config/keys').mongoURI;
+const db = config.get('mongoURI');
 
 // conncect to mongodb
-mongoose.connect(db, {useUnifiedTopology: true, useNewUrlParser: true})
+mongoose.connect(db, { useUnifiedTopology: true, useNewUrlParser: true })
     .then(() => console.log('Mongodb connected...'))
     .catch(err => console.log(err));
 
 // use routes
-app.use('/api/users', users);
-app.use('/api/posts', posts);
+app.use('/v0/users', users);
+app.use('/v0/posts', posts);
+app.use('/v0/auth', auth);
 
 const port = process.env.PORT || 1337;
 

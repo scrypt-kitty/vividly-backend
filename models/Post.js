@@ -1,30 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const UserSchema = new Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    username: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    profilePicture: {
-        type: String,
-        default: 'https://peachedstorage.blob.core.windows.net/profilepics/default.png'
-    },
-    bio: {
-        type: String,
-        default: ''
-    },
-    password: {
-        type: String,
-        required: true
-    }
-});
-
 const PostContentSchema = new Schema({
     postType: {
         type: String,
@@ -64,5 +40,6 @@ const PostSchema = new Schema({
 });
 
 module.exports = {
-    User: mongoose.model('user', UserSchema),
+    Post: mongoose.model('post', PostSchema),
+    PostContent: mongoose.model('postcontent', PostContentSchema)
 };
