@@ -40,4 +40,5 @@ const UserSchema = new Schema({
 
 module.exports = {
     User: mongoose.model('user', UserSchema),
+    Friend: mongoose.model('friend', FriendSchema)
 };
