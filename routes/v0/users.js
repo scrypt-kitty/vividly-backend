@@ -8,8 +8,8 @@ const authMiddleware = require('../../middleware/auth');
 const User = require('../../models/User').User;
 const Post = require('../../models/Post').Post;
 
-// @route   POST api/users
-// @desc    Create a User
+// @route   POST v0/users/register
+// @desc    Register a new User
 // @access  Public
 router.post('/register', (req, res) => {
     const { name, username, password } = req.body;
@@ -67,21 +67,12 @@ router.post('/register', (req, res) => {
 
 });
 
-// @route   GET api/posts
-// @desc    Get Post by id
-// @access  Public
-router.get('/', (req, res) => {
-    User.find()
-        .then(users => res.json(users))
-        .catch(err => res.status(404).json({ success: false }));
-
-});
-
-// @route   GET api/posts
-// @desc    Get Post by id
-// @access  Public
-router.get('/:id', (req, res) => {
-    User.findById(req.params.id)
+// @route   GET v0/users/lookup
+// @desc    Lookup user by username
+// @access  Private
+router.get('/lookup/:username', authMiddleware, (req, res) => {
+    User.findOne({ username: req.params.username})
+        .select('name username profilePicture bio')
         .then(user => {
             if (!user)
                 throw error;
@@ -91,7 +82,7 @@ router.get('/:id', (req, res) => {
 });
 
 // need to fix this :)
-// @route   DELETE api/users
+// @route   DELETE v0/users
 // @desc    Delete a User by id
 // @access  Private
 router.delete('/:id', authMiddleware, (req, res) => {
