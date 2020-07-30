@@ -67,6 +67,29 @@ router.post('/register', (req, res) => {
 
 });
 
+// @route   GET api/posts
+// @desc    Get Post by id
+// @access  Public
+router.get('/', (req, res) => {
+    User.find()
+        .then(users => res.json(users))
+        .catch(err => res.status(404).json({ success: false }));
+
+});
+
+// @route   GET api/posts
+// @desc    Get Post by id
+// @access  Public
+router.get('/:id', (req, res) => {
+    User.findById(req.params.id)
+        .then(user => {
+            if (!user)
+                throw error;
+            res.json(user)
+        })
+        .catch(err => res.status(404).json({ success: false }));
+});
+
 // need to fix this :)
 // @route   DELETE api/users
 // @desc    Delete a User by id

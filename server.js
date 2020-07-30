@@ -6,6 +6,7 @@ const config = require('config');
 const users = require('./routes/v0/users');
 const posts = require('./routes/v0/posts');
 const auth = require('./routes/v0/auth');
+const friends = require('./routes/v0/friends');
 
 const app = express();
 
@@ -24,6 +25,7 @@ mongoose.connect(db, { useUnifiedTopology: true, useNewUrlParser: true })
 app.use('/v0/users', users);
 app.use('/v0/posts', posts);
 app.use('/v0/auth', auth);
+app.use('/v0/friends', friends);
 
 const port = process.env.PORT || 1337;
 
