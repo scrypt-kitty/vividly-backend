@@ -56,10 +56,73 @@ router.post('/username', authMiddleware, async (req, res) => {
 
         await User.findOneAndUpdate({ id: req.user.id }, { username: req.body.username });
 
-        return req.json({ success: true });
+        return res.json({ success: true });
 
     } catch (e) {
         res.status(500).json({ msg: 'could not get username availability' });
+    }
+
+});
+
+
+// @route   POST v0/account/blocked_words
+// @desc    Add to blocked words list
+// @access  Private
+router.post('/blocked_words', authMiddleware, async (req, res) => {
+
+    try {
+        const user = await User.findById(req.user.id);
+        const blockedWords = await user.blockedWords;
+        if (blockedWords.indexOf(req.body.new_word) > -1)
+            return res.status(400).json({ msg: 'word already in blocked words list' });
+        blockedWords.push(req.body.new_word);
+        await user.save();
+
+        return res.json({ success: true });
+
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ msg: 'could not add to blocked words list' });
+    }
+
+});
+
+
+// @route   DELETE v0/account/blocked_words
+// @desc    Delete from blocked words list
+// @access  Private
+router.delete('/blocked_words', authMiddleware, async (req, res) => {
+
+    try {
+        const user = await User.findById(req.user.id);
+        const blockedWords = await user.blockedWords;
+        if (blockedWords.indexOf(req.body.word) < 0)
+            return res.status(400).json({ msg: 'word not in blocked words list' });
+        user.blockedWords = blockedWords.filter(w => w !== req.body.word);
+        await user.save();
+
+        return res.json({ success: true });
+
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ msg: 'could not add to blocked words list' });
+    }
+
+});
+
+
+// @route   GET v0/account/blocked_words
+// @desc    See blocked words list
+// @access  Private
+router.get('/blocked_words', authMiddleware, async (req, res) => {
+
+    try {
+        const user = await User.findById(req.user.id);
+
+        return res.json({ success: true, blocked_words: user.blockedWords });
+
+    } catch (e) {
+        res.status(500).json({ msg: 'could not get blocked words list' });
     }
 
 });

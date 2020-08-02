@@ -35,7 +35,8 @@ const UserSchema = new Schema({
         type: String,
         required: true
     },
-    friends: [FriendSchema]
+    friends: [FriendSchema],
+    blockedWords: [String],
 });
 
 module.exports = {
