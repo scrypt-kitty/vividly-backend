@@ -76,10 +76,6 @@ router.delete('/remove/:id', [authMiddleware, otherUserExists], async (req, res)
 
 		const friendsList = await friend.friends;
 		const usersList = await user.friends;
-		console.log("friends list");
-		console.log(friendsList);
-		console.log("users list");
-		console.log(usersList);
 
 		const isRemoveRequestValid = friendsList.filter(f => f.friendId === userId).length > 0 && usersList.filter(f => f.friendId === friendId).length > 0;
 
@@ -167,7 +163,6 @@ router.post('/pending/add', authMiddleware, async (req, res) => {
 		return res.status(200).json({success: true});
 		
 	} catch(err) {
-		console.log(err);
 		return res.status(500).json({ msg: 'cannot accept friend request' });
 	}
 

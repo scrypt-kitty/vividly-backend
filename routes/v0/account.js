@@ -81,7 +81,6 @@ router.post('/blocked_words', authMiddleware, async (req, res) => {
         return res.json({ success: true });
 
     } catch (e) {
-        console.log(e);
         res.status(500).json({ msg: 'could not add to blocked words list' });
     }
 
@@ -104,7 +103,6 @@ router.delete('/blocked_words', authMiddleware, async (req, res) => {
         return res.json({ success: true });
 
     } catch (e) {
-        console.log(e);
         res.status(500).json({ msg: 'could not add to blocked words list' });
     }
 

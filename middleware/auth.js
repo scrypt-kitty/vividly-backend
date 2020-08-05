@@ -6,18 +6,15 @@ const User = require('../models/User').User;
 function auth(req, res, next) {
     const token = req.header('x-auth-token');
 
-    if (!token) {
-        res.status(401).json({ msg: 'access denied' });
-    }
+    if (!token)
+        return res.status(401).json({ msg: 'access denied' });
 
     try {
         const decoded = jwt.verify(token, config.get('jwtSecret'));
         User.findById(decoded.id)
             .then(usr => {
-                if (!usr) {
-                    console.log("lol");
+                if (!usr)
                     return res.status(400).json({ msg: 'invalid token' });
-                }
 
                 req.user = decoded;
                 next(); // call next piece of middleware

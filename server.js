@@ -8,6 +8,7 @@ const posts = require('./routes/v0/posts');
 const auth = require('./routes/v0/auth');
 const friends = require('./routes/v0/friends');
 const account = require('./routes/v0/account');
+const comments = require('./routes/v0/comments');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/v0/posts', posts);
 app.use('/v0/auth', auth);
 app.use('/v0/friends', friends);
 app.use('/v0/account', account);
+app.use('/v0/comments', comments);
 
 const port = process.env.PORT || 1337;
 
