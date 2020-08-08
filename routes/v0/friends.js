@@ -5,6 +5,7 @@ const authMiddleware = require('../../middleware/auth');
 
 const User = require('../../models/User').User;
 const Friend = require('../../models/User').Friend;
+const Post = require('../../models/Post').Post;
 
 function otherUserExists(req, res, next) {
 	if (!req.body.friendId) {
@@ -56,6 +57,7 @@ router.post('/add', [authMiddleware, otherUserExists], async (req, res) => {
 		await friend.save();
 
 	} catch (err) {
+		console.log(err);
 		return res.status(500).json({ msg: 'cannot add friend at this time' });
 	}
 
@@ -88,7 +90,7 @@ router.delete('/remove/:id', [authMiddleware, otherUserExists], async (req, res)
 		await friend.save();
 		await user.save();
 
-		return res.status(200).json({success: true});
+		return res.status(200).json({ success: true });
 
 	} catch (err) {
 		return res.status(500).json({ msg: 'cannot remove friend at this time' });
@@ -147,12 +149,12 @@ router.post('/pending/add', authMiddleware, async (req, res) => {
 			return res.status(400).json({ msg: 'invalid friendship request' });
 
 		user.friends = usersList.map(f => {
-			if(f.friendId === friendId)
+			if (f.friendId === friendId)
 				f.friendType = 'friends';
 			return f;
 		});
 		friend.friends = friendsList.map(f => {
-			if(f.friendId === userId)
+			if (f.friendId === userId)
 				f.friendType = 'friends';
 			return f;
 		});
@@ -160,9 +162,9 @@ router.post('/pending/add', authMiddleware, async (req, res) => {
 		await user.save();
 		await friend.save();
 
-		return res.status(200).json({success: true});
-		
-	} catch(err) {
+		return res.status(200).json({ success: true });
+
+	} catch (err) {
 		return res.status(500).json({ msg: 'cannot accept friend request' });
 	}
 
@@ -225,6 +227,109 @@ router.get('/list', authMiddleware, async (req, res) => {
 
 	} catch (err) {
 		return res.status(500).json({ msg: 'cannot get list of pending friends' });
+	}
+});
+
+
+// @route   GET v0/friends/feed
+// @desc    Get most recent post of each friend
+// @access  Private
+router.get('/feed', authMiddleware, async (req, res) => {
+	const user = req.user;
+	const friends = user.friends.filter(f => f.friendType === 'friends');
+	console.log(friends);
+	const friendIds = friends.map(f => f.friendId);
+	try {
+		const friendsList = await User.find().where('_id').in(friendIds).select('profilePicture bio name username').lean().exec();
+
+		const feed = await Promise.all(friendsList.map(async (friend) => {
+			try {
+				// get newest post
+				const newestPost = await Post.findOne({ authorId: friend._id }).sort('-createdTime').lean().select('-comments');
+				newestPost.content = newestPost.content[0];
+
+				console.log(friends.filter(f => f.friendId === friend.id));
+				console.log(friend.id);
+				// // get number of unread posts
+				// const lastReadPostTime = friends.filter(f => f.friendId === friend._id)[0].lastReadPostTime || null;
+				let unreadPosts = 0;
+				// console.log('unread posts');
+
+				// if (lastReadPostTime) {
+				// 	const curDate = Date.now();
+				// 	unreadPosts = await Post.count({ createdTime: { $gt: curDate }});
+				// }
+
+				return { ...friend, newestPost, unreadPosts };
+			} catch (e) {
+				console.log(e);
+				throw err;
+			}
+		}));
+
+		res.status(200).json(feed);
+
+	} catch (err) {
+		return res.status(500).json({ msg: 'cannot get friend feed' });
+	}
+});
+
+
+// @route   GET v0/friends/feed/userId/postIndex
+// @desc    Get 15 most recent posts of a friend
+// @access  Private
+router.get('/feed/:friendId/:postIndex?', authMiddleware, async (req, res) => {
+	const user = req.user;
+	try {
+		const friend = await User.findById(req.params.friendId).lean();
+		if (!friend)
+			return res.status(404).json({ success: false });
+
+		const filteredFriends = user.friends.map(f => f.friendId === req.params.friendId && f.friendType === 'friends');
+		if (filteredFriends.length < 1)
+			return res.status(401).json({ success: false });
+
+		// get 15 posts written by friend!
+		const curDate = Date.now();
+		const postIndexStart = req.params.postIndex || 0;
+		const posts = await Post.find({ authorId: req.params.friendId, createdTime: { $lt: curDate } }).skip(postIndexStart).limit(15).lean();
+
+		res.status(200).json(posts);
+
+	} catch (err) {
+		return res.status(500).json({ msg: 'cannot get list of pending friends' });
+	}
+});
+
+
+// @route   GET v0/friends/feed/userId/markRead
+// @desc    Mark feed as read
+// @access  Private
+router.get('/feed/:friendId/markread', authMiddleware, async (req, res) => {
+	const user = req.user;
+	try {
+		const friend = await User.findById(req.params.friendId).select('id').lean();
+		if (!friend)
+			return res.status(404).json({ success: false });
+
+		const filteredFriends = user.friends.map(f => f.friendId === req.params.friendId && f.friendType === 'friends');
+		if (filteredFriends.length < 1)
+			return res.status(401).json({ success: false });
+
+		user.friends = user.friends.map(f => {
+			if (f.friendId === req.params.friendId) {
+				f.lastReadPostTime = Date.now();
+			}
+			return f;
+		});
+
+		await user.save();
+
+		
+		res.status(200).json({ success: true });
+
+	} catch (err) {
+		return res.status(500).json({ msg: 'cannot mark feed as read' });
 	}
 });
 

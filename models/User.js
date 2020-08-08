@@ -10,7 +10,11 @@ const FriendSchema = new Schema({
 	friendId: {
 		type: String,
 		required: true
-	}
+    },
+    lastReadPostTime: {
+        type: Schema.Types.Mixed,
+        default: null
+    }
 });
 
 const UserSchema = new Schema({
@@ -22,6 +26,15 @@ const UserSchema = new Schema({
         type: String,
         required: true,
         unique: true
+    },
+    email : {
+        type: String,
+        required: true,
+        unique: true
+    },
+    emailVerified: {
+        type: Boolean,
+        default: false
     },
     profilePicture: {
         type: String,

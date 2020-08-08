@@ -33,16 +33,23 @@ const PostContentSchema = new Schema({
         type: String,
         required: true
     }
-})
+});
+
+const LikedBySchema = new Schema({
+    friendId: {
+        type: String,
+        required: true
+    },
+    likedTime: {
+        type: Date,
+        default: Date.now
+    }
+});
 
 const PostSchema = new Schema({
     updatedTime: {
         type: Date,
         default: Date.now
-    },
-    likeCount: {
-        type: Number,
-        default: 0
     },
     createdTime: {
         type: Date,
@@ -61,6 +68,7 @@ const PostSchema = new Schema({
         default: false
     },
     comments: [CommentSchema],
+    likedBy: [LikedBySchema]
 });
 
 module.exports = {

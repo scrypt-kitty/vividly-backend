@@ -6,34 +6,41 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../../middleware/auth');
 
 const User = require('../../models/User').User;
-const Post = require('../../models/Post').Post;
 
 // @route   POST v0/users/register
 // @desc    Register a new User
 // @access  Public
-router.post('/register', (req, res) => {
-    const { name, username, password } = req.body;
-    if (!name || !username || !password) {
+router.post('/register', async (req, res) => {
+    const { name, username, password, email } = req.body;
+    if (!name || !username || !password || !email) {
         return res.status(400).json({ msg: 'missing fields', succcess: false });
     }
 
-    User.findOne({ username })
-        .then(user => {
-            if (user) {
-                return res.status(400).json({ msg: 'user with username already exists', success: false });
-            }
+    try {
 
-            const newUser = new User({
-                name,
-                username,
-                password
-            });
+        const user = await User.findOne({ username }).lean();
+        if (user)
+            return res.status(400).json({ msg: 'user with username already exists', success: false });
+
+        const userEmailCheck = await User.findOne({ email }).lean();
+        if (userEmailCheck)
+            return res.status(400).json({ msg: 'user with that email already exists', succcess: false })
+
+        const newUser = new User({
+            name,
+            username,
+            password,
+            email
+        });
 
 
-            bcrypt.genSalt(10, (err, salt) => {
-                bcrypt.hash(newUser.password, salt, (err, hash) => {
+        bcrypt.genSalt(10, (err, salt) => {
+            bcrypt.hash(newUser.password, salt, (err, hash) => {
+
+
+                const saveUser = async () => {
                     if (err) {
-                        newUser.remove();
+                        await newUser.remove();
                         return res.status(500).json({
                             msg: 'error creating new user',
                             success: false
@@ -41,37 +48,42 @@ router.post('/register', (req, res) => {
                     }
 
                     newUser.password = hash;
-                    newUser.save()
-                        .then(user => {
+                    await newUser.save();
 
-                            jwt.sign({
-                                id: user.id
-                            }, config.get('jwtSecret'), (err, token) => {
-                                if (err) throw err;
-                                res.json({
-                                    user: {
-                                        id: user.id,
-                                        name: user.name,
-                                        username: user.username,
+                    jwt.sign({
+                        id: newUser.id
+                    }, config.get('jwtSecret'), (err, token) => {
+                        if (err) throw err;
 
-                                    }, token
-                                });
-                            });
+                        res.json({
+                            user: {
+                                id: newUser.id,
+                                name: newUser.name,
+                                username: newUser.username,
+                                email: newUser.email
 
-
+                            }, token
                         });
-                })
-            })
 
+
+                    });
+                }
+                saveUser();
+            });
         });
 
+    } catch (e) {
+        res.status(500).json({ succcess: false, msg: 'unable to create account at this time' });
+    }
+
 });
+
 
 // @route   GET v0/users/lookup
 // @desc    Lookup user by username
 // @access  Private
 router.get('/lookup/:username', authMiddleware, (req, res) => {
-    User.findOne({ username: req.params.username})
+    User.findOne({ username: req.params.username })
         .select('name username profilePicture bio')
         .then(user => {
             if (!user)
@@ -80,6 +92,7 @@ router.get('/lookup/:username', authMiddleware, (req, res) => {
         })
         .catch(err => res.status(404).json({ success: false }));
 });
+
 
 // need to fix this :)
 // @route   DELETE v0/users
