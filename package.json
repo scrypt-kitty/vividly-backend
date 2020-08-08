@@ -19,5 +19,8 @@
         "mongoose": "^5.9.26",
         "nodemon": "^2.0.4",
         "uuid": "^8.3.0"
+    },
+    "devDependencies": {
+        "eslint": "^7.6.0"
     }
 }

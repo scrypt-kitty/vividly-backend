@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const authMiddleware = require('../../middleware/auth');
+const auth = require('../../middleware/auth');
 
 const User = require('../../models/User').User;
 const Friend = require('../../models/User').Friend;
@@ -25,7 +24,7 @@ function otherUserExists(req, res, next) {
 // @route   POST v0/friends/add
 // @desc    Send a friend request
 // @access  Private
-router.post('/add', [authMiddleware, otherUserExists], async (req, res) => {
+router.post('/add', [auth, otherUserExists], async (req, res) => {
 	const friendId = req.body.friendId;
 	const userId = req.user.id;
 	try {
@@ -68,7 +67,7 @@ router.post('/add', [authMiddleware, otherUserExists], async (req, res) => {
 // @route   DELETE v0/friends/remove
 // @desc    remove a friend
 // @access  Private
-router.delete('/remove/:id', [authMiddleware, otherUserExists], async (req, res) => {
+router.delete('/remove/:id', [auth, otherUserExists], async (req, res) => {
 	const friendId = req.params.id;
 	const userId = req.user.id;
 
@@ -103,7 +102,7 @@ router.delete('/remove/:id', [authMiddleware, otherUserExists], async (req, res)
 // @route   GET v0/friends/pending/ids
 // @desc    See incoming friend ids
 // @access  Private
-router.get('/pending/ids', authMiddleware, async (req, res) => {
+router.get('/pending/ids', auth, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.id);
 		const friendsList = await user.friends;
@@ -117,7 +116,7 @@ router.get('/pending/ids', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/pending
 // @desc    See incoming friend info
 // @access  Private
-router.get('/pending', authMiddleware, async (req, res) => {
+router.get('/pending', auth, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.id);
 		const pendingIds = await user.friends.filter(f => f.friendType === 'pending').map(f => f.friendId);
@@ -132,7 +131,7 @@ router.get('/pending', authMiddleware, async (req, res) => {
 // @route   POST v0/friends/pending/add
 // @desc    accept pending friend request 
 // @access  Private
-router.post('/pending/add', authMiddleware, async (req, res) => {
+router.post('/pending/add', auth, async (req, res) => {
 	const friendId = req.body.friendId;
 	const userId = req.user.id;
 
@@ -174,7 +173,7 @@ router.post('/pending/add', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/outgoing/ids
 // @desc    See outgoing friend ids
 // @access  Private
-router.get('/outgoing/ids', authMiddleware, async (req, res) => {
+router.get('/outgoing/ids', auth, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.id);
 		const friendsList = await user.friends;
@@ -188,7 +187,7 @@ router.get('/outgoing/ids', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/outgoing
 // @desc    See outgoing friend info
 // @access  Private
-router.get('/outgoing', authMiddleware, async (req, res) => {
+router.get('/outgoing', auth, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.id);
 		const outgoingIds = await user.friends.filter(f => f.friendType === 'outgoing').map(f => f.friendId);
@@ -204,7 +203,7 @@ router.get('/outgoing', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/list/ids
 // @desc    See current friend ids
 // @access  Private
-router.get('/list/ids', authMiddleware, async (req, res) => {
+router.get('/list/ids', auth, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.id);
 		const friendsList = await user.friends;
@@ -218,7 +217,7 @@ router.get('/list/ids', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/list
 // @desc    See current friends info
 // @access  Private
-router.get('/list', authMiddleware, async (req, res) => {
+router.get('/list', auth, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.id);
 		const friendIds = await user.friends.filter(f => f.friendType === 'friends').map(f => f.friendId);
@@ -234,7 +233,7 @@ router.get('/list', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/feed
 // @desc    Get most recent post of each friend
 // @access  Private
-router.get('/feed', authMiddleware, async (req, res) => {
+router.get('/feed', auth, async (req, res) => {
 	const user = req.user;
 	const friends = user.friends.filter(f => f.friendType === 'friends');
 	console.log(friends);
@@ -263,7 +262,7 @@ router.get('/feed', authMiddleware, async (req, res) => {
 				return { ...friend, newestPost, unreadPosts };
 			} catch (e) {
 				console.log(e);
-				throw err;
+				throw 'error';
 			}
 		}));
 
@@ -278,7 +277,7 @@ router.get('/feed', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/feed/userId/postIndex
 // @desc    Get 15 most recent posts of a friend
 // @access  Private
-router.get('/feed/:friendId/:postIndex?', authMiddleware, async (req, res) => {
+router.get('/feed/:friendId/:postIndex?', auth, async (req, res) => {
 	const user = req.user;
 	try {
 		const friend = await User.findById(req.params.friendId).lean();
@@ -305,7 +304,7 @@ router.get('/feed/:friendId/:postIndex?', authMiddleware, async (req, res) => {
 // @route   GET v0/friends/feed/userId/markRead
 // @desc    Mark feed as read
 // @access  Private
-router.get('/feed/:friendId/markread', authMiddleware, async (req, res) => {
+router.get('/feed/:friendId/markread', auth, async (req, res) => {
 	const user = req.user;
 	try {
 		const friend = await User.findById(req.params.friendId).select('id').lean();
