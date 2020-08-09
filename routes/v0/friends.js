@@ -219,13 +219,13 @@ router.get('/list/ids', auth, async (req, res) => {
 // @access  Private
 router.get('/list', auth, async (req, res) => {
 	try {
-		const user = await User.findById(req.user.id);
+		const user = req.user;
 		const friendIds = await user.friends.filter(f => f.friendType === 'friends').map(f => f.friendId);
 		const friendsList = await User.find().where('_id').in(friendIds).select('profilePicture bio name username').exec();
 		res.status(200).json(friendsList);
 
 	} catch (err) {
-		return res.status(500).json({ msg: 'cannot get list of pending friends' });
+		return res.status(500).json({ msg: 'cannot get list of friends' });
 	}
 });
 
@@ -234,11 +234,10 @@ router.get('/list', auth, async (req, res) => {
 // @desc    Get most recent post of each friend
 // @access  Private
 router.get('/feed', auth, async (req, res) => {
-	const user = req.user;
-	const friends = user.friends.filter(f => f.friendType === 'friends');
-	console.log(friends);
-	const friendIds = friends.map(f => f.friendId);
 	try {
+		const user = req.user;
+		const friends = await user.friends.filter(f => f.friendType === 'friends');
+		const friendIds = friends.map(f => f.friendId);
 		const friendsList = await User.find().where('_id').in(friendIds).select('profilePicture bio name username').lean().exec();
 
 		const feed = await Promise.all(friendsList.map(async (friend) => {
@@ -247,17 +246,14 @@ router.get('/feed', auth, async (req, res) => {
 				const newestPost = await Post.findOne({ authorId: friend._id }).sort('-createdTime').lean().select('-comments');
 				newestPost.content = newestPost.content[0];
 
-				console.log(friends.filter(f => f.friendId === friend.id));
-				console.log(friend.id);
-				// // get number of unread posts
-				// const lastReadPostTime = friends.filter(f => f.friendId === friend._id)[0].lastReadPostTime || null;
+				// get number of unread posts
+				const filteredFriends = friends.filter(f => f.friendId == friend._id);
+				const lastReadPostTime = await filteredFriends[0].lastReadPostTime;
 				let unreadPosts = 0;
-				// console.log('unread posts');
 
-				// if (lastReadPostTime) {
-				// 	const curDate = Date.now();
-				// 	unreadPosts = await Post.count({ createdTime: { $gt: curDate }});
-				// }
+				if (lastReadPostTime) {
+					unreadPosts = await Post.countDocuments({ authorId: friend._id, createdTime: { $gt: lastReadPostTime } });
+				}
 
 				return { ...friend, newestPost, unreadPosts };
 			} catch (e) {
@@ -269,6 +265,7 @@ router.get('/feed', auth, async (req, res) => {
 		res.status(200).json(feed);
 
 	} catch (err) {
+		console.log(err);
 		return res.status(500).json({ msg: 'cannot get friend feed' });
 	}
 });
@@ -301,10 +298,10 @@ router.get('/feed/:friendId/:postIndex?', auth, async (req, res) => {
 });
 
 
-// @route   GET v0/friends/feed/userId/markRead
+// @route   POST v0/friends/feed/markread/:friendId
 // @desc    Mark feed as read
 // @access  Private
-router.get('/feed/:friendId/markread', auth, async (req, res) => {
+router.post('/feed/markread/:friendId', auth, async (req, res) => {
 	const user = req.user;
 	try {
 		const friend = await User.findById(req.params.friendId).select('id').lean();
@@ -324,7 +321,6 @@ router.get('/feed/:friendId/markread', auth, async (req, res) => {
 
 		await user.save();
 
-		
 		res.status(200).json({ success: true });
 
 	} catch (err) {

@@ -14,14 +14,7 @@ const CommentSchema = new Schema({
         type: Date,
         default: Date.now
     },
-    replyToId: {
-        type: String,
-        default: null
-    },
-    isDeleted: {
-        type: Boolean,
-        default: false
-    }
+    replies: [] // same as CommentSchema but without replies
 });
 
 const PostContentSchema = new Schema({
@@ -35,16 +28,6 @@ const PostContentSchema = new Schema({
     }
 });
 
-const LikedBySchema = new Schema({
-    friendId: {
-        type: String,
-        required: true
-    },
-    likedTime: {
-        type: Date,
-        default: Date.now
-    }
-});
 
 const PostSchema = new Schema({
     updatedTime: {
@@ -68,7 +51,7 @@ const PostSchema = new Schema({
         default: false
     },
     comments: [CommentSchema],
-    likedBy: [LikedBySchema]
+    likedBy: [String]
 });
 
 module.exports = {

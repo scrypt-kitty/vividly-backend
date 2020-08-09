@@ -13,15 +13,16 @@ function auth(req, res, next) {
 		const decoded = jwt.verify(token, config.get('jwtSecret'));
 		if (req.method === 'GET') {
 			User.findById(decoded.id)
-				.lean()
 				.select('-password')
+				.lean()
 				.then(usr => {
 					if (!usr)
 						return res.status(400).json({ msg: 'invalid token' });
 
-					req.user = decoded;
+					req.user = usr;
 					next(); // call next piece of middleware
-				});
+				})
+				.catch(error => res.status(400).json({ msg: 'invalid token' }));
 		} else {
 			User.findById(decoded.id)
 				.select('-password')
@@ -29,9 +30,10 @@ function auth(req, res, next) {
 					if (!usr)
 						return res.status(400).json({ msg: 'invalid token' });
 
-					req.user = decoded;
+					req.user = usr;
 					next(); // call next piece of middleware
-				});
+				})
+				.catch(error => res.status(400).json({ msg: 'invalid token' }));
 		}
 
 	} catch (e) {
