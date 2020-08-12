@@ -16,6 +16,7 @@ router.post('/', (req, res) => {
 	}
 
 	User.findOne({ username })
+		.lean()
 		.then(user => {
 			if (!user) {
 				return res.status(400).json({ msg: 'user with username does not exist', success: false });
@@ -29,12 +30,20 @@ router.post('/', (req, res) => {
 						id: user.id
 					}, config.get('jwtSecret'), (err, token) => {
 						if (err) throw err;
+						const {
+							id, name, username, email, emailVerified, profilePicture, bio, friends, blockedWords
+						} = user;
 						res.json({
 							user: {
-								id: user.id,
-								name: user.name,
-								username: user.username,
-
+								id,
+								name,
+								username,
+								email,
+								emailVerified,
+								profilePicture,
+								bio,
+								friends,
+								blockedWords
 							}, token
 						});
 					});
