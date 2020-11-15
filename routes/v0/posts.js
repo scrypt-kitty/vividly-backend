@@ -96,10 +96,16 @@ router.post('/:id/unlike', auth, async (req, res) => {
 // @access  Private
 router.post('/', auth, async (req, res) => {
 	try {
-		const newContentBlocks = req.body.content.map(c => (new PostContent({
-			postType: c.postType,
-			content: c.content
-		})));
+		let contentIndex = -1;
+		const newContentBlocks = req.body.content.map(c => {
+			contentIndex++;
+			return new PostContent({
+				index: contentIndex,
+				postType: c.postType,
+				content: c.content
+			});
+
+		});
 		const newPost = new Post({
 			content: newContentBlocks,
 			authorId: req.user.id,
@@ -127,11 +133,16 @@ router.patch('/:id', auth, async (req, res) => {
 		const authorId = await post.authorId;
 		if (req.user.id !== authorId)
 			return res.status(401).json({ success: false });
+		let contentIndex = -1;
 
-		const newContentBlocks = req.body.content.map(c => (new PostContent({
-			postType: c.postType,
-			content: c.content
-		})));
+		const newContentBlocks = req.body.content.map(c => {
+			contentIndex++;
+			return new PostContent({
+				index: contentIndex,
+				postType: c.postType,
+				content: c.content
+			});
+		});
 
 		post.content = newContentBlocks;
 		post.updatedTime = Date.now();

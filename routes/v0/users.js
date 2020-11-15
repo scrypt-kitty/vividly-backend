@@ -96,12 +96,12 @@ router.get('/lookup/:username', auth, (req, res) => {
 
 
 // @route   DELETE v0/users
-// @desc    Delete a users own aaccount
+// @desc    Delete a users own account
 // @access  Private
 router.delete('/', auth, async (req, res) => {
 	const user = req.user;
 	try {
-		
+
 		// remove user from friends lists of other users
 		const friends = user.friends;
 		await Promise.all(friends.map(async (f) => {
@@ -122,6 +122,18 @@ router.delete('/', auth, async (req, res) => {
 		return res.status(500).json({ msg: 'cannot delete user at this time.'});
 	}
 
+});
+
+// @route	GET v0/self
+// @desc	Get user's basic info from jwt
+// @access	Private
+router.get('/self', auth, (req, res) => {
+	try {
+		const user = req.user;
+		return res.status(200).json({ user, success: true });
+	} catch (e) {
+		return res.status(500).json({ msg: 'could not sign in' });
+	}
 });
 
 module.exports = router;

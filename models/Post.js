@@ -18,6 +18,10 @@ const CommentSchema = new Schema({
 });
 
 const PostContentSchema = new Schema({
+    index: {
+        type: Number,
+        required: true
+    },
     postType: {
         type: String,
         required: true

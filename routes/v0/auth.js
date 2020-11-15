@@ -6,14 +6,61 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../../models/User').User;
 
-// @route   POST auth
+// @route   POST auth/login
 // @desc    Authenticate a User
 // @access  Public
-router.post('/', (req, res) => {
+router.post('/login', async (req, res) => {
 	const { username, password } = req.body;
 	if (!username || !password) {
-		return res.status(400).json({ msg: 'missing fields', succcess: false });
+		return res.status(400).json({ msg: `missing fields`, succcess: false });
 	}
+
+	try {
+
+		const user = await User.findOne({ username }).lean();
+
+		if (!user)
+			throw Error('user does not exist');
+
+		const match = await bcrypt.compare(password, user.password);
+		if (!match)
+			throw Error('invalid credentials');
+
+		const token = jwt.sign({
+			id: user._id
+		}, config.get('jwtSecret'));
+
+		if (!token)
+			throw Error('couldnt sign token');
+
+
+		const {
+			name, email, emailVerified, profilePicture, bio, friends, blockedWords
+		} = user;
+
+		res.status(200).json({
+			jwtToken: token,
+			user: {
+				id: user._id,
+				name,
+				email,
+				username,
+				bio,
+				emailVerified,
+				profilePicture,
+				bio,
+				friends,
+				blockedWords
+			}
+		});
+
+
+	} catch (e) {
+		console.log(e);
+		res.status(400).json({ success: false, msg: e });
+	}
+
+	/*
 
 	User.findOne({ username })
 		.lean()
@@ -44,12 +91,14 @@ router.post('/', (req, res) => {
 								bio,
 								friends,
 								blockedWords
-							}, token
+							},
+							token
 						});
 					});
 				});
 
 		});
+		*/
 
 });
 

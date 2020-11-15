@@ -11,6 +11,10 @@ const FriendSchema = new Schema({
 		type: String,
 		required: true
     },
+    isFavorite: {
+        type: Boolean,
+        default: false,
+    },
     lastReadPostTime: {
         type: Schema.Types.Mixed,
         default: null
@@ -50,6 +54,21 @@ const UserSchema = new Schema({
     },
     friends: [FriendSchema],
     blockedWords: [String],
+});
+
+// Duplicate the ID field.
+UserSchema.virtual('id').get(function(){
+    return this._id.toHexString();
+});
+
+// Ensure virtual fields are serialised.
+UserSchema.set('toJSON', {
+    virtuals: true
+});
+
+// Ensure virtual fields are serialised.
+UserSchema.set('toObject', {
+    virtuals: true
 });
 
 module.exports = {

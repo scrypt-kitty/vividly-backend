@@ -6,6 +6,11 @@ const User = require('../../models/User').User;
 const Friend = require('../../models/User').Friend;
 const Post = require('../../models/Post').Post;
 
+function makeIdFriendly(obj) {
+	obj.id = obj._id;
+	delete obj._id;
+}
+
 function otherUserExists(req, res, next) {
 	if (!req.body.friendId) {
 		next();
@@ -104,7 +109,7 @@ router.delete('/remove/:id', [auth, otherUserExists], async (req, res) => {
 // @access  Private
 router.get('/pending/ids', auth, async (req, res) => {
 	try {
-		const user = await User.findById(req.user.id);
+		const user = req.user;
 		const friendsList = await user.friends;
 		res.status(200).json(friendsList.filter(f => f.friendType === 'pending'));
 	} catch (err) {
@@ -118,18 +123,19 @@ router.get('/pending/ids', auth, async (req, res) => {
 // @access  Private
 router.get('/pending', auth, async (req, res) => {
 	try {
-		const user = await User.findById(req.user.id);
+		const user = req.user;
 		const pendingIds = await user.friends.filter(f => f.friendType === 'pending').map(f => f.friendId);
 		const pendingUsers = await User.find().where('_id').in(pendingIds).select('profilePicture bio name username').exec();
 		res.status(200).json(pendingUsers);
 
 	} catch (err) {
+		console.log(err);
 		return res.status(500).json({ msg: 'cannot get list of pending friends' });
 	}
 });
 
 // @route   POST v0/friends/pending/add
-// @desc    accept pending friend request 
+// @desc    accept pending friend request
 // @access  Private
 router.post('/pending/add', auth, async (req, res) => {
 	const friendId = req.body.friendId;
@@ -238,30 +244,45 @@ router.get('/feed', auth, async (req, res) => {
 		const user = req.user;
 		const friends = await user.friends.filter(f => f.friendType === 'friends');
 		const friendIds = friends.map(f => f.friendId);
-		const friendsList = await User.find().where('_id').in(friendIds).select('profilePicture bio name username').lean().exec();
+		let friendsList = await User.find().where('_id').in(friendIds).select('profilePicture bio name username').lean().exec();
+		friendsList = friendsList.map(friend => {
+			makeIdFriendly(friend);
+			const theFriend = friends.filter(f => f.friendId == friend.id)[0];
+			return ({
+				isFavorite: theFriend.isFavorite,
+				...friend
+			});
+		})
 
 		const feed = await Promise.all(friendsList.map(async (friend) => {
 			try {
 				// get newest post
-				const newestPost = await Post.findOne({ authorId: friend._id }).sort('-createdTime').lean().select('-comments');
+				const newestPost = await Post.findOne({ authorId: friend.id }).sort('-createdTime').lean().select('id content createdTime');
+				if (!newestPost)
+					return { user: { unreadPosts: 0, ...friend }, newestPost: null };
+				makeIdFriendly(newestPost);
 				newestPost.content = newestPost.content[0];
+				delete newestPost.content._id;
 
 				// get number of unread posts
-				const filteredFriends = friends.filter(f => f.friendId == friend._id);
+				const filteredFriends = friends.filter(f => f.friendId == friend.id);
 				const lastReadPostTime = await filteredFriends[0].lastReadPostTime;
 				let unreadPosts = 0;
 
 				if (lastReadPostTime) {
-					unreadPosts = await Post.countDocuments({ authorId: friend._id, createdTime: { $gt: lastReadPostTime } });
+					unreadPosts = await Post.countDocuments({ authorId: friend.id, createdTime: { $gt: lastReadPostTime } });
 				}
 
-				return { ...friend, newestPost, unreadPosts };
+				console.log('yay!');
+				return { user: { unreadPosts, ...friend }, newestPost };
 			} catch (e) {
 				console.log(e);
 				throw 'error';
 			}
 		}));
+		console.log(feed);
 
+		// TODO: sort feed based on favorites > time post updated
 		res.status(200).json(feed);
 
 	} catch (err) {
@@ -287,13 +308,25 @@ router.get('/feed/:friendId/:postIndex?', auth, async (req, res) => {
 
 		// get 15 posts written by friend!
 		const curDate = Date.now();
-		const postIndexStart = req.params.postIndex || 0;
-		const posts = await Post.find({ authorId: req.params.friendId, createdTime: { $lt: curDate } }).skip(postIndexStart).limit(15).lean();
+		const postIndexStart = req.params.postIndex ? parseInt(req.params.postIndex) : 0;
+		let posts = await Post.find({ authorId: req.params.friendId, createdTime: { $lt: curDate } }).select('-updatedTime -authorId').skip(postIndexStart).limit(15).lean();
+		posts = posts.map(p => {
+			makeIdFriendly(p);
+			const { likedBy } = p;
+			return {
+				id: p.id,
+				isUpdated: p.isUpdated,
+				likeCount: likedBy.length,
+				isLikedByUser: likedBy.includes(user.id),
+				comments: p.comments,
+				content: p.content
+			};
+		});
 
 		res.status(200).json(posts);
 
 	} catch (err) {
-		return res.status(500).json({ msg: 'cannot get list of pending friends' });
+		return res.status(500).json({ msg: 'cannot get list of posts' });
 	}
 });
 
