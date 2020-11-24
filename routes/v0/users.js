@@ -37,8 +37,6 @@ router.post('/register', async (req, res) => {
 
 		bcrypt.genSalt(10, (err, salt) => {
 			bcrypt.hash(newUser.password, salt, (err, hash) => {
-
-
 				const saveUser = async () => {
 					if (err) {
 						await newUser.remove();
