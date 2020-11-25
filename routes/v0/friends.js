@@ -252,7 +252,7 @@ router.get('/feed', auth, async (req, res) => {
 				isFavorite: theFriend.isFavorite,
 				...friend
 			});
-		})
+		});
 
 		const feed = await Promise.all(friendsList.map(async (friend) => {
 			try {
@@ -273,17 +273,36 @@ router.get('/feed', auth, async (req, res) => {
 					unreadPosts = await Post.countDocuments({ authorId: friend.id, createdTime: { $gt: lastReadPostTime } });
 				}
 
-				console.log('yay!');
 				return { user: { unreadPosts, ...friend }, newestPost };
 			} catch (e) {
 				console.log(e);
 				throw 'error';
 			}
 		}));
-		console.log(feed);
+
+		const { id, username, bio, name, profilePicture } = user;
+
+		let newestUserPost = await Post.findOne({ authorId: user.id }).sort('-createdTime').lean().select('id content createdTime');
+		if (newestUserPost) {
+			newestUserPost.content = newestUserPost.content[0];
+			delete newestUserPost.content._id;
+		}
+
+		const authUserFeed = {
+			user: {
+				id,
+				username,
+				bio,
+				name,
+				profilePicture,
+				unreadPosts: 0,
+				isFavorite: false
+			},
+			newestPost: newestUserPost
+		};
 
 		// TODO: sort feed based on favorites > time post updated
-		res.status(200).json(feed);
+		res.status(200).json({ friends: feed, authUserFeed });
 
 	} catch (err) {
 		console.log(err);
