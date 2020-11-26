@@ -17,7 +17,7 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ limit: '25mb' }));
 
 // MongoDB config
-const db = config.get('mongoURI');
+const db = process.env.PEACHED_MONGO_URI;
 
 // conncect to mongodb
 mongoose.connect(db, { useUnifiedTopology: true, useNewUrlParser: true })

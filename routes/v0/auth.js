@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
 
 		const token = jwt.sign({
 			id: user._id
-		}, config.get('jwtSecret'));
+		}, process.env.PEACHED_JWT_SECRET);
 
 		if (!token)
 			throw Error('couldnt sign token');

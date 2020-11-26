@@ -6,7 +6,7 @@ const AWS = require("aws-sdk");
 const auth = require('../../middleware/auth');
 
 const s3 = new AWS.S3();
-const BUCKET_NAME = config.get('awsBucketName');
+const BUCKET_NAME = process.env.BUCKET_NAME;
 
 // @route   Get v0/upload/
 // @desc    Upload an image file

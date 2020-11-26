@@ -51,7 +51,7 @@ router.post('/register', async (req, res) => {
 
 					jwt.sign({
 						id: newUser.id
-					}, config.get('jwtSecret'), (err, token) => {
+					}, process.env.PEACHED_JWT_SECRET, (err, token) => {
 						if (err) throw err;
 
 						res.json({

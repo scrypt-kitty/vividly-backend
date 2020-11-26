@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const config = require('config');
-const BUCKET_NAME = config.get('awsBucketName');
+const BUCKET_NAME = process.env.BUCKET_NAME;
 
 const FriendSchema = new Schema({
 	friendType: {
