@@ -4,6 +4,7 @@ const auth = require('../../middleware/auth');
 
 const { Post, PostContent, Comment } = require('../../models/Post');
 const { User } = require('../../models/User');
+const { makeIdFriendly } = require('../../utils');
 
 
 // // make sure a user is post creator or friends w post creator
@@ -112,7 +113,8 @@ router.post('/', auth, async (req, res) => {
 		});
 
 		await newPost.save();
-		res.json({ success: true, newPost });
+		const transformedNewPost = newPost.toJSON();
+		res.json({ success: true, newPost: transformedNewPost });
 
 	} catch (e) {
 		res.status(500).json({ success: false, msg: 'cant create a new post at this time' });
@@ -217,9 +219,9 @@ router.post('/:postId/comments', auth, async (req, res) => {
 
 		post.save();
 
-		res.json({ succcess: true, newComment });
+		res.json({ succcess: true, newComment: newComment.toJSON() });
 	} catch (e) {
-		res.status(500).json({ msg: 'error in replying to  post' });
+		res.status(500).json({ success: false, msg: 'error in replying to post' });
 	}
 });
 
@@ -229,21 +231,22 @@ router.post('/:postId/comments', auth, async (req, res) => {
 // @access  Private
 router.delete('/:postId/comments/:commentId', auth, async (req, res) => {
 	try {
+		const user = req.user;
 		const post = await Post.findById(req.params.postId);
 		if (!post)
-			return res.status(404).json({ success: false });
+			return res.status(404).json({ success: false, msg: 'post not found' });
 
 		if (post.comments.length < 1)
-			return res.status(404).json({ success: false });
+			return res.status(404).json({ success: false, msg: 'comment not found' });
 
 		if (req.body.isReply) {
 			post.comments = post.comments.map(c => {
-				c.replies = c.replies.filter(cr => (cr.authorId === req.user.id && cr.id === req.params.commentId));
+				c.replies = c.replies.filter(cr => (cr.id === req.params.commentId && (cr.authorId === user.id || post.authorId === user.id)));
 				return c;
 			})
 		} else {
 			// deletes all child replies too
-			post.comments = post.comments.filter(c => (c.id === req.params.commentId && c.authorId === req.user.id));
+			post.comments = post.comments.filter(c => (c.id === req.params.commentId && (c.authorId === user.id || post.authorId === user.id)));
 		}
 
 		await post.save();
@@ -262,10 +265,10 @@ router.get('/:postId/comments', auth, async (req, res) => {
 	try {
 		const post = await Post.findById(req.params.postId).select('comments authorId').lean();
 		if (!post)
-			return res.status(404).json({ success: false });
+			return res.status(404).json({ success: false, msg: 'post not found' });
 
 		if (!canInteractWithPost(req.user.id, post.authorId, req.user.friends))
-			return res.status(401).json({ succcess: false });
+			return res.status(401).json({ succcess: false, msg: 'not authorized' });
 
 		const comments = await Promise.all(post.comments.map(async (comment) => {
 			try {

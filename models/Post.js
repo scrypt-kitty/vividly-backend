@@ -17,6 +17,21 @@ const CommentSchema = new Schema({
     replies: [] // same as CommentSchema but without replies
 });
 
+// Duplicate the ID field.
+CommentSchema.virtual('id').get(function(){
+    return this._id.toHexString();
+});
+
+// Ensure virtual fields are serialised.
+CommentSchema.set('toJSON', {
+    virtuals: true
+});
+
+// Ensure virtual fields are serialised.
+CommentSchema.set('toObject', {
+    virtuals: true
+});
+
 const PostContentSchema = new Schema({
     index: {
         type: Number,
@@ -30,6 +45,21 @@ const PostContentSchema = new Schema({
         type: String,
         required: true
     }
+});
+
+// Duplicate the ID field.
+PostContentSchema.virtual('id').get(function(){
+    return this._id.toHexString();
+});
+
+// Ensure virtual fields are serialised.
+PostContentSchema.set('toJSON', {
+    virtuals: true
+});
+
+// Ensure virtual fields are serialised.
+PostContentSchema.set('toObject', {
+    virtuals: true
 });
 
 
@@ -56,6 +86,21 @@ const PostSchema = new Schema({
     },
     comments: [CommentSchema],
     likedBy: [String]
+});
+
+// Duplicate the ID field.
+PostSchema.virtual('id').get(function(){
+    return this._id.toHexString();
+});
+
+// Ensure virtual fields are serialised.
+PostSchema.set('toJSON', {
+    virtuals: true
+});
+
+// Ensure virtual fields are serialised.
+PostSchema.set('toObject', {
+    virtuals: true
 });
 
 module.exports = {

@@ -4,14 +4,14 @@ const config = require('config');
 const BUCKET_NAME = process.env.BUCKET_NAME;
 
 const FriendSchema = new Schema({
-	friendType: {
+    friendType: {
         type: String,
-        enum : ['pending','outgoing', 'friends'],
-		default: 'outgoing'
-	},
-	friendId: {
-		type: String,
-		required: true
+        enum: ['pending', 'outgoing', 'friends'],
+        default: 'outgoing'
+    },
+    friendId: {
+        type: String,
+        required: true
     },
     isFavorite: {
         type: Boolean,
@@ -33,7 +33,7 @@ const UserSchema = new Schema({
         required: true,
         unique: true
     },
-    email : {
+    email: {
         type: String,
         required: true,
         unique: true
@@ -56,10 +56,14 @@ const UserSchema = new Schema({
     },
     friends: [FriendSchema],
     blockedWords: [String],
+    isDeactivated: {
+        type: Boolean,
+        default: false
+    }
 });
 
 // Duplicate the ID field.
-UserSchema.virtual('id').get(function(){
+UserSchema.virtual('id').get(function () {
     return this._id.toHexString();
 });
 

@@ -5,11 +5,7 @@ const auth = require('../../middleware/auth');
 const User = require('../../models/User').User;
 const Friend = require('../../models/User').Friend;
 const Post = require('../../models/Post').Post;
-
-function makeIdFriendly(obj) {
-	obj.id = obj._id;
-	delete obj._id;
-}
+const { makeIdFriendly } = require('../../utils');
 
 function otherUserExists(req, res, next) {
 	if (!req.body.friendId) {
@@ -280,7 +276,7 @@ router.get('/feed', auth, async (req, res) => {
 			}
 		}));
 
-		const { id, username, bio, name, profilePicture } = user;
+		const { _id, username, bio, name, profilePicture } = user;
 
 		let newestUserPost = await Post.findOne({ authorId: user.id }).sort('-createdTime').lean().select('id content createdTime');
 		if (newestUserPost) {
@@ -290,7 +286,7 @@ router.get('/feed', auth, async (req, res) => {
 
 		const authUserFeed = {
 			user: {
-				id,
+				id: _id,
 				username,
 				bio,
 				name,
@@ -342,10 +338,10 @@ router.get('/feed/:friendId/:postIndex?', auth, async (req, res) => {
 			};
 		});
 
-		res.status(200).json(posts);
+		res.status(200).json({ success: true, posts });
 
 	} catch (err) {
-		return res.status(500).json({ msg: 'cannot get list of posts' });
+		return res.status(500).json({ success: false, msg: 'cannot get list of posts' });
 	}
 });
 
