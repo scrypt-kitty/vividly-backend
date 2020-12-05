@@ -3,24 +3,43 @@ const router = express.Router();
 const auth = require('../../middleware/auth');
 
 const User = require('../../models/User').User;
+const { isNameValid, stripNewlines } = require('../../utils');
+
+const accountUrlRegex = /^https?:\/\//;
+
+function isBioValid(bio) {
+	return bio.length < 150;
+}
 
 // @route   POST v0/account/update_profile
-// @desc    Change basic profile info (bio, name, pfp -- in progress)
+// @desc    Change basic profile info (bio, name, url)
 // @access  Private
 router.post('/update_profile', auth, async (req, res) => {
 	const newProfileInfo = {};
 
-	if (req.body.name)
+	if (req.body.name) {
+		const name = stripNewlines(req.body.bio.trim());
+		if (!isNameValid(name)) return res.status(400).json({ success: false, msg: 'name must be between 1 and 50 characters long' });
 		newProfileInfo.name = req.body.name;
+	}
 
-	if (req.body.bio)
-		newProfileInfo.bio = req.body.bio;
+	if (req.body.bio) {
+		const bio = stripNewlines(req.body.bio.trim());
+		if (!isBioValid(bio)) return res.status(400).json({ success: false, msg: 'bio must be under 150 characters' });
+		newProfileInfo.bio = bio;
+	}
+
+	if (req.body.url) {
+		const url = stripNewlines(req.body.url.trim());
+		const formattedUrl = !accountUrlRegex.test(url) ? 'http://' + url : url;
+		newProfileInfo.url = formattedUrl;
+	}
 
 	try {
 		await User.updateOne({ id: req.user.id }, newProfileInfo);
 		res.status(200).json({ success: true });
 	} catch (e) {
-		res.status(500).json({ msg: 'could not update profile information' });
+		res.status(500).json({ success: false, msg: 'could not update profile information' });
 	}
 
 });

@@ -59,6 +59,10 @@ const UserSchema = new Schema({
     isDeactivated: {
         type: Boolean,
         default: false
+    },
+    url: {
+        type: String,
+        default: ''
     }
 });
 

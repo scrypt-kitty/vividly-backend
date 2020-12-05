@@ -6,14 +6,9 @@ const auth = require('../../middleware/auth');
 
 const { User } = require('../../models/User');
 const { Post } = require('../../models/Post');
-const { makeIdFriendly } = require('../../utils');
+const { makeIdFriendly, isNameValid, stripNewlines } = require('../../utils');
 
 const usernameRegex = /^[a-zA-Z0-9_]{4,15}$/;
-
-function isNameValid(name) {
-	// TODO: add more checks
-	return name.length > 0 && name.length < 51;
-}
 
 function isPasswordValid(password) {
 	// TODO: add more checks
@@ -25,7 +20,7 @@ function isPasswordValid(password) {
 // @access  Public
 router.post('/register', async (req, res) => {
 	let { name, username, password, email } = req.body;
-	name = name.trim();
+	name = stripNewlines(name.trim());
 	username = username.trim();
 	email = email.trim();
 
