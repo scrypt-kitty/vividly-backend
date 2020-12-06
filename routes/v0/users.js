@@ -6,11 +6,7 @@ const auth = require('../../middleware/auth');
 
 const { User } = require('../../models/User');
 const { Post } = require('../../models/Post');
-const { makeIdFriendly, isNameValid, stripNewlines, isPasswordValid } = require('../../utils');
-
-const usernameRegex = /^[a-zA-Z0-9_]{4,15}$/;
-
-
+const { makeIdFriendly, isNameValid, stripNewlines, isPasswordValid, isUsernameValid } = require('../../utils');
 
 // @route   POST v0/users/register
 // @desc    Register a new User
@@ -25,7 +21,7 @@ router.post('/register', async (req, res) => {
 		return res.status(400).json({ msg: 'missing fields', succcess: false });
 	}
 
-	if (!usernameRegex.test(usernameRegex))
+	if (!isUsernameValid(username))
 		return res.status(400).json({ success: false, msg: 'username is invalid' });
 
 	if (!isNameValid(name))
@@ -128,6 +124,7 @@ router.delete('/', auth, async (req, res) => {
 
 		// remove all posts by user
 		await Post.deleteMany({ authorId: user.id });
+		user.isDeactivated = true;
 
 		return res.status(200).json({ succcess: true });
 	} catch (e) {

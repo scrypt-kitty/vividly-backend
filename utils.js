@@ -10,7 +10,8 @@ function isNameValid(name) {
 
 function stripNewlines(str) {
 	// there should be a better way to do this :)
-	return str.replaceAll('\n', '');
+	const newlineRegex = /\\n/g;
+	return str.replace(newlineRegex, '');
 }
 
 function isPasswordValid(password) {
@@ -18,9 +19,15 @@ function isPasswordValid(password) {
 	return password.length > 7;
 }
 
+function isUsernameValid(username) {
+	const usernameRegex = /^[a-zA-Z0-9_]{4,15}$/;
+	return usernameRegex.test(username);
+}
+
 module.exports = {
 	makeIdFriendly,
 	isNameValid,
 	stripNewlines,
-	isPasswordValid
+	isPasswordValid,
+	isUsernameValid
 };

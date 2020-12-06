@@ -5,7 +5,7 @@ const auth = require('../../middleware/auth');
 const jwt = require('jsonwebtoken');
 
 const User = require('../../models/User').User;
-const { isNameValid, stripNewlines, isPasswordValid } = require('../../utils');
+const { isNameValid, stripNewlines, isPasswordValid, isUsernameValid } = require('../../utils');
 
 const accountUrlRegex = /^https?:\/\//;
 
@@ -90,17 +90,24 @@ router.get('/email_available/:email', async (req, res) => {
 // @access  Private
 router.post('/username', auth, async (req, res) => {
 
+	const username = req.body.username;
+	const user = req.user;
+
+	if (!username || !isUsernameValid(username))
+		return res.status(400).json({ success: false, msg: 'username is invalid'});
+
 	try {
 
-		const usernameCheck = await User.findOne({ username: req.params.username }).lean();
+		const usernameCheck = await User.findOne({ username: username }).lean();
 		if (usernameCheck)
-			return req.status(400).json({ success: false, msg: 'username unavailable' });
+			return res.status(400).json({ success: false, msg: 'username unavailable' });
 
-		await User.findOneAndUpdate({ id: req.user.id }, { username: req.body.username });
-
+		user.username = username;
+		await user.save();
 		return res.json({ success: true });
 
 	} catch (e) {
+		console.log(e);
 		res.status(500).json({ msg: 'could not get username availability' });
 	}
 
