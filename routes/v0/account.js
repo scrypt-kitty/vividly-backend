@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const auth = require('../../middleware/auth');
+const jwt = require('jsonwebtoken');
 
 const User = require('../../models/User').User;
-const { isNameValid, stripNewlines } = require('../../utils');
+const { isNameValid, stripNewlines, isPasswordValid } = require('../../utils');
 
 const accountUrlRegex = /^https?:\/\//;
 
@@ -164,5 +166,44 @@ router.get('/blocked_words', auth, async (req, res) => {
 	}
 
 });
+
+router.post('/password', auth, async (req, res) => {
+	const { password } = req.body;
+	const user = req.user;
+	if (!password) return res.status(400).json({ success: false, msg: 'missing new password' });
+	if (!isPasswordValid(password)) return res.status(400).json({ success: false, msg: 'password is too short' });
+
+	bcrypt.genSalt(10, (err, salt) => {
+		if (err) {
+			res.status(500).json({ success: false, msg: 'cant change password at this time' });
+		}
+
+		bcrypt.hash(password, salt, (err, hash) => {
+			const updatePassword = async () => {
+				try {
+					if (err) {
+						throw err;
+					}
+
+					user.password = hash;
+					await user.save();
+
+					jwt.sign({
+						id: user.id,
+						passwordHash: hash,
+					}, process.env.PEACHED_JWT_SECRET, (err, token) => {
+						if (err) throw err;
+
+						res.status(200).json({ success: true, token });
+					});
+				} catch (e) {
+					return res.status(500).json({ success: false, msg: 'cant change password at this time' });
+				}
+			};
+			updatePassword();
+		});
+	});
+});
+
 
 module.exports = router;

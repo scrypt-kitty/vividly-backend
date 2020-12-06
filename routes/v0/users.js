@@ -6,14 +6,11 @@ const auth = require('../../middleware/auth');
 
 const { User } = require('../../models/User');
 const { Post } = require('../../models/Post');
-const { makeIdFriendly, isNameValid, stripNewlines } = require('../../utils');
+const { makeIdFriendly, isNameValid, stripNewlines, isPasswordValid } = require('../../utils');
 
 const usernameRegex = /^[a-zA-Z0-9_]{4,15}$/;
 
-function isPasswordValid(password) {
-	// TODO: add more checks
-	return password.length > 7;
-}
+
 
 // @route   POST v0/users/register
 // @desc    Register a new User
@@ -34,7 +31,7 @@ router.post('/register', async (req, res) => {
 	if (!isNameValid(name))
 		return res.status(400).json({ success: false, msg: 'name is invalid' });
 
-	if (!isPasswordValid)
+	if (!isPasswordValid(password))
 		return res.status(400).json({ success: false, msg: 'password is too short' });
 
 	try {
@@ -68,7 +65,8 @@ router.post('/register', async (req, res) => {
 					await newUser.save();
 
 					jwt.sign({
-						id: newUser.id
+						id: newUser.id,
+						passwordHash: hash
 					}, process.env.PEACHED_JWT_SECRET, (err, token) => {
 						if (err) throw err;
 

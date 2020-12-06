@@ -13,8 +13,14 @@ function stripNewlines(str) {
 	return str.replaceAll('\n', '');
 }
 
+function isPasswordValid(password) {
+	// TODO: add more checks
+	return password.length > 7;
+}
+
 module.exports = {
 	makeIdFriendly,
 	isNameValid,
-	stripNewlines
+	stripNewlines,
+	isPasswordValid
 };
