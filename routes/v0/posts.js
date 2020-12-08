@@ -9,7 +9,7 @@ const { makeIdFriendly } = require('../../utils');
 
 // // make sure a user is post creator or friends w post creator
 function canInteractWithPost(userId, authorId, friendsList) {
-	if (userId === authorId)
+	if (userId == authorId)
 		return true;
 
 	const friendsFiltered = friendsList.filter(f => (f.friendType === 'friends' && f.friendId === authorId));
@@ -114,6 +114,7 @@ router.post('/', auth, async (req, res) => {
 
 		await newPost.save();
 		const transformedNewPost = newPost.toJSON();
+		makeIdFriendly(transformedNewPost);
 		res.json({ success: true, newPost: transformedNewPost });
 
 	} catch (e) {
@@ -262,6 +263,7 @@ router.delete('/:postId/comments/:commentId', auth, async (req, res) => {
 // @desc    Get comments for a post
 // @access  Private
 router.get('/:postId/comments', auth, async (req, res) => {
+	makeIdFriendly(req.user);
 	try {
 		const post = await Post.findById(req.params.postId).select('comments authorId').lean();
 		if (!post)
@@ -270,17 +272,36 @@ router.get('/:postId/comments', auth, async (req, res) => {
 		if (!canInteractWithPost(req.user.id, post.authorId, req.user.friends))
 			return res.status(401).json({ succcess: false, msg: 'not authorized' });
 
-		const comments = await Promise.all(post.comments.map(async (comment) => {
+		// dont show comments for comment authors that auth user has blocked
+		let filterBlockedComments = post.comments.filter(comment => !req.user.blockedUserIds.includes(comment.authorId));
+
+		const commentAuthors = {};
+		await Promise.all(filterBlockedComments.map(async (comment) => {
+			const author = await User.findById(comment.authorId).select('name username profilePicture bio isDeactivated blockedUserIds').lean();
+			commentAuthors[comment.authorId] = author;
+		}));
+		// dont show comment if comment author has blocked the auth user or if the account is deactivated
+		filterBlockedComments = filterBlockedComments.filter(comment => {
+			const author = commentAuthors[comment.authorId];
+			return !author || !author.isDeactivated || !author.blockedUserIds.includes(req.user.id);
+		});
+
+		let comments = await Promise.all(filterBlockedComments.map(async (comment) => {
 			try {
-				comment.author = await User.findById(comment.authorId).select('name username profilePicture bio').lean();
+				const { name, username, profilePicture, bio } = commentAuthors[comment.authorId];
+				comment.author = { name, username, profilePicture, bio };
+				makeIdFriendly(comment);
+				delete comment.replies;
+				/*
 				comment.replies = await Promise.all(comment.replies.map(async (cr) => {
 					try {
-						cr.author = await User.findById(cr.authorId).select('name username profilePicture').lean();
+						cr.author = await User.findById(cr.authorId).select('name username profilePicture isDeactivated').lean();
 						return cr;
 					} catch (e) {
 						return res.status(500).json({ succcess: false });
 					}
 				}));
+				*/
 				return comment;
 			} catch (e) {
 				return res.status(500).json({ succcess: false });

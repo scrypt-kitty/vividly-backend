@@ -37,6 +37,11 @@ router.post('/add', [auth, otherUserExists], async (req, res) => {
 		const friendsList = await friend.friends;
 		const usersList = await user.friends;
 
+		const isUserBlocked = friend.blockedUserIds.includes(userId);
+		const isFriendBlocked = user.blockedUserIds.includes(friendId);
+		if (isUserBlocked || isFriendBlocked)
+			return res.status(400).json({ success: false, msg: 'cant send friend request to this user' });
+
 		const friendRequestInvalid = friendsList.filter(f => f.friendId === userId).length > 0 || usersList.filter(f => f.friendId === friendId).length > 0;
 
 		if (friendRequestInvalid)

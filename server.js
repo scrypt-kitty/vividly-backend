@@ -9,6 +9,7 @@ const auth = require('./routes/v0/auth');
 const friends = require('./routes/v0/friends');
 const account = require('./routes/v0/account');
 const upload = require('./routes/v0/upload');
+const block = require('./routes/v0/block');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/v0/auth', auth);
 app.use('/v0/friends', friends);
 app.use('/v0/account', account);
 app.use('/v0/upload', upload);
+app.use('/v0/block', block);
 
 const port = process.env.PORT || 1337;
 

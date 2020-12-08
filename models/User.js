@@ -63,7 +63,8 @@ const UserSchema = new Schema({
     url: {
         type: String,
         default: ''
-    }
+    },
+    blockedUserIds: [String]
 });
 
 // Duplicate the ID field.
