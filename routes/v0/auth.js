@@ -22,13 +22,14 @@ router.post('/login', async (req, res) => {
 		if (!user)
 			throw Error('user does not exist');
 
-		const match = await bcrypt.compare(password, user.password);
+		const hashedPassword = user.password;
+		const match = await bcrypt.compare(password, hashedPassword);
 		if (!match)
 			throw Error('invalid credentials');
 
 		const token = jwt.sign({
 			id: user._id,
-			passwordHash: password
+			passwordHash: hashedPassword
 		}, process.env.PEACHED_JWT_SECRET);
 
 		if (!token)
