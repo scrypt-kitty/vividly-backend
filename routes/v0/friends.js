@@ -382,4 +382,51 @@ router.post('/feed/markread/:friendId', auth, async (req, res) => {
 });
 
 
+// @route POST v0/friends/favorites
+// @desc add a friend to favorites
+// @access private
+router.post('/favorites', auth, async (req, res) => {
+	const friendId = req.body.friendId;
+	if (!friendId) return res.status(400).json({ success: false, msg: 'missing friendId' });
+	const user = req.user;
+
+	try {
+		user.friends = user.friends.map(friend => {
+			if (friend.friendId === friendId && friend.friendType === 'friends') {
+				friend.isFavorite = true;
+			}
+			return friend;
+		});
+
+		await user.save();
+		return res.status(200).json({ success: true });
+	} catch (e) {
+		return res.status(500).json({ success: false, msg: 'cant add user to favorites at this time' });
+	}
+});
+
+
+// @route DELETE v0/friends/favorites
+// @desc remove a friend from favorites
+// @access private
+router.delete('/favorites', auth, async (req, res) => {
+	const friendId = req.body.friendId;
+	if (!friendId) return res.status(400).json({ success: false, msg: 'missing friendId' });
+	const user = req.user;
+
+	try {
+		user.friends = user.friends.map(friend => {
+			if (friend.friendId === friendId && friend.friendType === 'friends') {
+				friend.isFavorite = false;
+			}
+			return friend;
+		});
+
+		await user.save();
+		return res.status(200).json({ success: true });
+	} catch (e) {
+		return res.status(500).json({ success: false, msg: 'cant remove user from favorites at this time' });
+	}
+});
+
 module.exports = router;
