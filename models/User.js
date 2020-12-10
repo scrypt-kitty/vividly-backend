@@ -74,7 +74,9 @@ UserSchema.virtual('id').get(function () {
 
 // Ensure virtual fields are serialised.
 UserSchema.set('toJSON', {
-    virtuals: true
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) { delete ret._id }
 });
 
 // Ensure virtual fields are serialised.

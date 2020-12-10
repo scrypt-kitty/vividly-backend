@@ -3,14 +3,26 @@ const router = express.Router();
 const auth = require('../../middleware/auth');
 
 const User = require('../../models/User').User;
+const { makeIdFriendly } = require('../../utils');
 
 // @route   GET v0/block
 // @desc    Get blocked users list
 // @access  Private
 router.get('/', auth, async (req, res) => {
-    // TODO: return more info about each blocked user
     const user = req.user;
-    res.status(200).json({ success: true, blockedUsers: user.blockedUserIds });
+    try {
+        const blockedUsersList = await Promise.all(user.blockedUserIds.map(async blockedId => {
+            const blockedUser = await User.findOne({ _id: blockedId, isDeactivated: false }).select('name username profilePicture');
+            if (!blockedUser) return null;
+            return blockedUser;
+        }));
+
+        res.status(200).json({ success: true, blockedUsers: blockedUsersList.filter(item => item !== null) });
+
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({ success: false, msg: 'cant get blocked users at this time' });
+    }
 });
 
 // @route   POST v0/block
