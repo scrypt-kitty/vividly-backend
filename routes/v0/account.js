@@ -20,9 +20,9 @@ router.post('/update_profile', auth, async (req, res) => {
 	const newProfileInfo = {};
 
 	if (req.body.name) {
-		const name = stripNewlines(req.body.bio.trim());
+		const name = stripNewlines(req.body.name.trim());
 		if (!isNameValid(name)) return res.status(400).json({ success: false, msg: 'name must be between 1 and 50 characters long' });
-		newProfileInfo.name = req.body.name;
+		newProfileInfo.name = name;
 	}
 
 	if (req.body.bio) {
@@ -38,8 +38,12 @@ router.post('/update_profile', auth, async (req, res) => {
 	}
 
 	try {
-		await User.updateOne({ id: req.user.id }, newProfileInfo);
-		res.status(200).json({ success: true });
+		const user = req.user;
+		if (newProfileInfo.name) user.name = newProfileInfo.name;
+		if (newProfileInfo.bio) user.bio = newProfileInfo.bio;
+		if (newProfileInfo.url) user.url = newProfileInfo.url;
+		await user.save();
+		res.status(200).json({ success: true, newProfileInfo });
 	} catch (e) {
 		res.status(500).json({ success: false, msg: 'could not update profile information' });
 	}

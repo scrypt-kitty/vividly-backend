@@ -95,12 +95,16 @@ PostSchema.virtual('id').get(function(){
 
 // Ensure virtual fields are serialised.
 PostSchema.set('toJSON', {
-    virtuals: true
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) { delete ret._id }
 });
 
 // Ensure virtual fields are serialised.
 PostSchema.set('toObject', {
-    virtuals: true
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) { delete ret._id }
 });
 
 module.exports = {

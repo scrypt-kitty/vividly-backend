@@ -303,19 +303,19 @@ router.get('/feed', auth, async (req, res) => {
 		};
 
 		// TODO: sort feed based on favorites > time post updated
-		res.status(200).json({ friends: feed, authUserFeed });
+		res.status(200).json({ success: true, friends: feed, authUserFeed });
 
 	} catch (err) {
 		console.log(err);
-		return res.status(500).json({ msg: 'cannot get friend feed' });
+		return res.status(500).json({ success: false, msg: 'cannot get friend feed' });
 	}
 });
 
 
-// @route   GET v0/friends/feed/userId/postIndex
+// @route   GET v0/friends/feed/userId/dateIndex
 // @desc    Get 15 most recent posts of a friend
 // @access  Private
-router.get('/feed/:friendId/:postIndex?', auth, async (req, res) => {
+router.get('/feed/:friendId/:dateIndex?', auth, async (req, res) => {
 	const user = req.user;
 	try {
 		const friend = await User.findById(req.params.friendId).lean();
@@ -326,26 +326,49 @@ router.get('/feed/:friendId/:postIndex?', auth, async (req, res) => {
 		if (filteredFriends.length < 1)
 			return res.status(401).json({ success: false });
 
-		// get 15 posts written by friend!
+		// get 30 posts written by friend!
 		const curDate = Date.now();
-		const postIndexStart = req.params.postIndex ? parseInt(req.params.postIndex) : 0;
-		let posts = await Post.find({ authorId: req.params.friendId, createdTime: { $lt: curDate } }).select('-updatedTime -authorId').skip(postIndexStart).limit(15).lean();
-		posts = posts.map(p => {
+		const dateIndexStart = req.params.dateIndex ? req.params.dateIndex : curDate;
+		let posts = await Post.find({ authorId: req.params.friendId, createdTime: { $lt: dateIndexStart } }).sort('field -createdTime').select('isUpdated content comments likedBy createdTime').limit(30).lean();
+		if (!posts) return res.status(404).json({ success: false, msg: 'no posts found' });
+		posts = await Promise.all(posts.map(async (p) => {
 			makeIdFriendly(p);
 			const { likedBy } = p;
+			const populatedComments = await Promise.all(p.comments.map(async (c) => {
+				// check if user is blocked
+				if (user.blockedUserIds.includes(c.authorId)) return null;
+
+				const commentAuthor = await User.findOne({ _id: c.authorId, isDeactivated: false }).select('name username bio profilePicture').lean();
+				if (!commentAuthor) {
+					return null;
+				}
+				c.author = commentAuthor;
+				makeIdFriendly(c.author);
+				makeIdFriendly(c);
+				delete c.replies;
+				return c;
+			}));
+
 			return {
 				id: p.id,
 				isUpdated: p.isUpdated,
 				likeCount: likedBy.length,
-				isLikedByUser: likedBy.includes(user.id),
-				comments: p.comments,
-				content: p.content
+				isLikedByUser: likedBy.filter(i => i == user._id).length > 0,
+				comments: populatedComments.filter(c => c !== null),
+				content: p.content,
+				createdTime: p.createdTime
 			};
-		});
+		}));
 
-		res.status(200).json({ success: true, posts });
+		let hasMorePosts = true;
+		const morePosts = await Post.find({ authorId: req.params.friendId, createdTime: { $lt: dateIndexStart } }).sort('field -createdTime').skip(posts.length).limit(1).lean();
+		if (morePosts.length === 0)
+			hasMorePosts = false;
+
+		res.status(200).json({ success: true, posts, hasMorePosts });
 
 	} catch (err) {
+		console.log(err);
 		return res.status(500).json({ success: false, msg: 'cannot get list of posts' });
 	}
 });

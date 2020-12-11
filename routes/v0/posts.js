@@ -59,9 +59,10 @@ router.post('/:id/like', auth, async (req, res) => {
 
 		await post.save();
 
-		res.json({ succcess: true, likedBy: post.likedBy });
+		res.status(200).json({ success: true, likedBy: post.likedBy });
 	} catch (e) {
-		res.status(500).json({ msg: 'error liking post' });
+		console.log(e);
+		res.status(500).json({ success: false, msg: 'error liking post' });
 	}
 });
 
@@ -85,9 +86,9 @@ router.post('/:id/unlike', auth, async (req, res) => {
 
 		await post.save();
 
-		res.json({ succcess: true, likedBy: post.likedBy });
+		res.status(200).json({ success: true, likedBy: post.likedBy });
 	} catch (e) {
-		res.status(500).json({ msg: 'error unliking post' });
+		res.status(500).json({ success: false, msg: 'error unliking post' });
 	}
 });
 
@@ -113,9 +114,10 @@ router.post('/', auth, async (req, res) => {
 		});
 
 		await newPost.save();
-		const transformedNewPost = newPost.toJSON();
-		makeIdFriendly(transformedNewPost);
-		res.json({ success: true, newPost: transformedNewPost });
+		const post = newPost.toObject();
+		post.isLikedByUser = false;
+		post.likeCount = 0;
+		res.json({ success: true, newPost: post });
 
 	} catch (e) {
 		res.status(500).json({ success: false, msg: 'cant create a new post at this time' });
@@ -174,7 +176,7 @@ router.delete('/:id', auth, async (req, res) => {
 		return res.json({ success: true });
 
 	} catch (e) {
-		res.status(500).json({ success: false });
+		res.status(500).json({ success: false, msg: 'cant delete post at this time' });
 	}
 });
 
@@ -220,8 +222,18 @@ router.post('/:postId/comments', auth, async (req, res) => {
 
 		post.save();
 
-		res.json({ succcess: true, newComment: newComment.toJSON() });
+		const { id, name, username, bio, profilePicture } = user;
+		const comment = newComment.toJSON();
+		comment.author = { id, name, username, bio, profilePicture };
+		delete comment.replies;
+		delete comment._id;
+		delete comment.authorId;
+
+		res.json({
+			success: true, comment
+		});
 	} catch (e) {
+		console.log(e);
 		res.status(500).json({ success: false, msg: 'error in replying to post' });
 	}
 });
