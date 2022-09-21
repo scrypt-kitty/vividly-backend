@@ -10,7 +10,7 @@
         "server": "nodemon server.js"
     },
     "dependencies": {
-        "@azure/storage-blob": "^12.2.0-preview.1",
+        "@azure/storage-blob": "^12.11.0",
         "@sendgrid/mail": "^7.2.2",
         "aws-sdk": "^2.798.0",
         "bcryptjs": "^2.4.3",
