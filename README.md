@@ -1,7 +1,7 @@
-# peachedapi
+# vividly backend
 
 wip!!
 
-backend for `peached` using
+backend for `vividly` using
 - express
 - mongo
